@@ -1,0 +1,49 @@
+plugins {
+    id 'application'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.xerial:sqlite-jdbc:3.47.1.0'
+}
+
+application {
+    mainModule = 'com.example.app'
+    mainClass = 'com.example.app.Main'
+}
+
+tasks.named('run') {
+    jvmArgs = ['--add-opens', 'java.base/java.lang=ALL-UNNAMED']
+}
+
+def jlinkTask = tasks.register('createJlinkImage', Exec) {
+    group = 'distribution'
+    description = 'Creates a custom JRE using jlink'
+    
+    def modulePath = sourceSets.main.runtimeClasspath.asPath
+    def outputDir = "${buildDir}/jlink-image"
+    
+    commandLine 'jlink',
+        '--module-path', modulePath,
+        '--add-modules', 'com.example.app',
+        '--output', outputDir,
+        '--strip-debug',
+        '--compress', '2'
+    
+    doLast {
+        println "JLink image created at: ${outputDir}"
+    }
+}
+
+tasks.named('build') {
+    dependsOn jlinkTask
+}
